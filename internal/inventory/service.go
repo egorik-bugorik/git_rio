@@ -8,11 +8,15 @@ type Service struct {
 	db DB
 }
 
+type Pagination struct {
+	Limit  int
+	Offset int
+}
 type DB interface {
 	CreateProduct(ctx context.Context, params CreateProductParams) error
-	SearchProduct(ctx context.Context, params SearchProductParams) (SearchProductResponse, error)
+	SearchProduct(ctx context.Context, params SearchProductParams) (*SearchProductResponse, error)
 	UpdateProduct(ctx context.Context, params UpdateProductParams) error
-	GetProduct(ctx context.Context, id string) (Product, error)
+	GetProduct(ctx context.Context, id string) (*Product, error)
 	DeleteProduct(ctx context.Context, id string) error
 	CreateReview(ctx context.Context, params CreateReviewParams) error
 	SearchReview(ctx context.Context, params SearchReviewParams) (SearchReviewResponse, error)

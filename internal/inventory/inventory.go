@@ -22,10 +22,10 @@ func (p *CreateProductParams) validate() error {
 }
 
 type SearchProductParams struct {
-	ID          string
-	Name        string
-	Description string
-	Price       int
+	QueryString string
+	MinPrice    int
+	MaxPrice    int
+	Pagination  Pagination
 }
 
 func (p *SearchProductParams) validate() error {
