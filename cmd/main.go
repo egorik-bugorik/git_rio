@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"pgxrio/internal/database"
 )
 
@@ -17,8 +18,11 @@ func main() {
 	connStr := "host=localhost port=5432 user=postgres password=1  database=pgxtutorial"
 
 	ctx := context.Background()
-	var logger tracer.Logger
-	logLvl :=
-	pgPool, err := database.NewPgxPool(ctx, connStr,logger,logLvl)
+	var logger = database.PGXStdLogger{}
+	logLvl, err := database.LogLevelFromConfig()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	pgPool, err := database.NewPgxPool(ctx, connStr, &logger, logLvl)
 
 }
