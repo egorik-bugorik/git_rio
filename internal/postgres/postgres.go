@@ -22,6 +22,10 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
+func NewDB(pool *pgxpool.Pool) DB {
+	return DB{pool: pool}
+}
+
 func (db *DB) TransactionContext(ctx context.Context) (context.Context, error) {
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
@@ -44,7 +48,7 @@ type connCtx struct {
 
 func (db *DB) CreateProduct(ctx context.Context, params inventory.CreateProductParams) error {
 
-	q := `insert into products(id,name.description,price) values($1,$2,$3,$4)`
+	q := `insert into product(id,name,description,price) values($1,$2,$3,$4)`
 	switch _, err := db.conn(ctx).Exec(ctx, q, params.ID, params.Name, params.Description, params.Price); {
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		{
@@ -76,7 +80,7 @@ func (db *DB) SearchProduct(ctx context.Context, params inventory.SearchProductP
 
 	where := strings.Join(w, " AND ")
 
-	sqlTotal := fmt.Sprintf("SELECT COUNT(*) from products where  %s", where)
+	sqlTotal := fmt.Sprintf("SELECT COUNT(*) from product where  %s", where)
 
 	resp := inventory.SearchProductResponse{
 		Items: []*inventory.Product{},
@@ -92,7 +96,7 @@ func (db *DB) SearchProduct(ctx context.Context, params inventory.SearchProductP
 		err = fmt.Errorf("coudln'tt create product on table ")
 
 	}
-	q := fmt.Sprintf(`SELECT * FROM product where $s order by id DESC`, where)
+	q := fmt.Sprintf("SELECT * FROM product where %s order by id DESC", where)
 	if params.Pagination.Limit != 0 {
 		args = append(args, params.Pagination.Limit)
 		q += fmt.Sprintf("LIMIT $%d", len(args))
@@ -126,7 +130,7 @@ func (db *DB) SearchProduct(ctx context.Context, params inventory.SearchProductP
 var ErrorProductNotFound error = errors.New("Product not found!!!")
 
 func (db *DB) UpdateProduct(ctx context.Context, params inventory.UpdateProductParams) error {
-	q := `update products
+	q := `update product
 SET 
     
 name = COALESCE($1, "name"),
