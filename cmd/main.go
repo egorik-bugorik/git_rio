@@ -23,6 +23,6 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	pgPool, err := database.NewPgxPool(ctx, connStr, &logger, logLvl)
+	_, err = database.NewPgxPool(ctx, connStr, &logger, logLvl)
 
 }
