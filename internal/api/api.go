@@ -34,7 +34,7 @@ type httpServer struct {
 
 func (s httpServer) Run(ctx context.Context, address string) error {
 
-	var handler http.Handler
+	var handler http.Handler = NewHttpServer(s.inventory)
 
 	if s.middleware != nil {
 		handler = s.middleware(handler)
