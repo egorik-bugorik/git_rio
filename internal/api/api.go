@@ -16,14 +16,14 @@ import (
 )
 
 type Server struct {
-	httpAddress string
-	grpcAddress string
-	service     *inventory.Service
+	HttpAddress string
+	GrpcAddress string
+	Service     *inventory.Service
 
 	httpServer *httpServer
 	grpcServer *grpcServer
 
-	stopFn *sync.Once
+	stopFn sync.Once
 }
 
 type httpServer struct {
@@ -32,7 +32,7 @@ type httpServer struct {
 	server     *http.Server
 }
 
-func (s httpServer) Run(ctx context.Context, address string) error {
+func (s *httpServer) Run(ctx context.Context, address string) error {
 
 	var handler http.Handler = NewHttpServer(s.inventory)
 
@@ -41,11 +41,11 @@ func (s httpServer) Run(ctx context.Context, address string) error {
 	}
 
 	s.server = &http.Server{Addr: address, Handler: handler, ReadHeaderTimeout: time.Second * 5}
+	log.Printf("grpc server listen at %s", address)
 
 	if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
 		return err
 	}
-	return nil
 
 	return nil
 
@@ -58,6 +58,7 @@ func (s *httpServer) Shutdown(ctx context.Context) {
 			log.Println("Gracefully shutdown http server is fail!")
 		}
 	}
+	log.Println("End og http end")
 
 }
 func (s *grpcServer) Run(ctx context.Context, address string) error {
@@ -69,6 +70,7 @@ func (s *grpcServer) Run(ctx context.Context, address string) error {
 	}
 
 	s.server = grpc.NewServer()
+	RegisterInventoryServer(s.server, &InventoryGRPCServer{Service: s.inventory})
 	reflection.Register(s.server)
 
 	log.Printf("grpc server listen at %s", lis.Addr())
@@ -82,26 +84,23 @@ func (s *grpcServer) Run(ctx context.Context, address string) error {
 }
 
 func (s *grpcServer) Shutdown(ctx context.Context) {
-
+	log.Println("shutting down gRPC server")
 	done := make(chan struct{}, 1)
-	log.Println("starting shut down grpc server ...")
 	go func() {
 		if s.server != nil {
 			s.server.GracefulStop()
-
 		}
 		done <- struct{}{}
 	}()
-
 	select {
 	case <-done:
+		log.Println("fail")
 	case <-ctx.Done():
+		log.Println("doone in grpc")
 		if s.server != nil {
 			s.server.Stop()
-
 		}
-		log.Println("Gracefully shutdown grppc server is fail!")
-
+		log.Println("graceful shutdown of gRPC server failed")
 	}
 }
 
@@ -115,18 +114,19 @@ func (s *Server) Run(ctx context.Context) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	s.httpServer = &httpServer{
-		inventory: s.service,
+		inventory: s.Service,
 	}
-	s.grpcServer = &grpcServer{inventory: s.service}
+
+	s.grpcServer = &grpcServer{inventory: s.Service}
 	go func() {
-		err := s.httpServer.Run(ctx, s.httpAddress)
+		err := s.httpServer.Run(ctx, s.HttpAddress)
 		if err != nil {
 			err = fmt.Errorf("Error with HTTP server ::: %v", err)
 		}
 		errorChannel <- err
 	}()
 	go func() {
-		err := s.grpcServer.Run(ctx, s.grpcAddress)
+		err := s.grpcServer.Run(ctx, s.GrpcAddress)
 		if err != nil {
 			err = fmt.Errorf("Error with GRPC server ::: %v", err)
 		}

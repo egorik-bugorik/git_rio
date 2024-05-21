@@ -8,6 +8,14 @@ type Service struct {
 	db DB
 }
 
+func NewService(db DB) *Service {
+	return &Service{db: db}
+}
+
+type ValidationError struct {
+	s string
+}
+
 type Pagination struct {
 	Limit  int
 	Offset int
